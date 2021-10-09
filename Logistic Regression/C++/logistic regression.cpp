@@ -9,6 +9,7 @@
 #include <math.h>
 #include <tuple>
 #include "numerical_cpp.cpp"
+#include <map>
 using namespace std;
 
 // 随机数生成器
@@ -90,8 +91,8 @@ public:
 	void train_model(vector<vector<double>> X,vector<vector<double>> y,int EPOCHS=1000,double lr=0.1){
 		for(int epoch=0;epoch<EPOCHS;epoch++){
 			gradient_descent(X,y,lr);
-			double acc = accuracy(X,y);
-			cout<<"epoch: "<<epoch+1<<"   acc: "<<acc<<endl;
+			// double acc = accuracy(X,y);
+			// cout<<"epoch: "<<epoch+1<<"   acc: "<<acc<<endl;
 		}
 	}
 
@@ -139,8 +140,64 @@ void load_data(vector<vector<double>> &X_data, vector<string> &target){
 	}
 }
 
-void OvO(void){
-	
+vector<string> OvO(vector<vector<double>> X_train,vector<vector<double>> X_test,
+				   vector<string> y_train,vector<string> y_test,
+				   int EPOCHS=200, double lr=0.1){
+	vector<string> Letters = {"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"};
+	vector<vector<double>> train_target;
+	vector<vector<string>> test_target(X_test.size(),vector<string>(325));
+	vector<vector<double>> y_pred;
+	vector<string> y_test_pred(y_test.size());
+	string letter1;
+	string letter2;
+	vector<vector<double>> ovo_X_train;
+	vector<string> ovo_y_train;
+	int n_pred = 0;
+	for(int i=0;i<25;i++){
+		for(int j=i+1;j<26;j++){
+			binary_logistic model(16);
+			letter1 = Letters[i];
+			letter2 = Letters[j];
+			for(int k=0;k<X_train.size();k++){
+				if(y_train[k] == letter1 || y_train[k] == letter2){
+					ovo_X_train.push_back(X_train[k]);
+					ovo_y_train.push_back(y_train[k]);
+				}
+			}
+			train_target = (letter1 == ovo_y_train);
+			model.train_model(ovo_X_train,train_target,EPOCHS,lr);
+			y_pred = model.predict(X_test,"label");
+			for(int k=0;k<X_test.size();k++){
+				if(y_pred[k][0] == 1){
+					test_target[k][n_pred] = letter1;
+				}
+				else{
+					test_target[k][n_pred] = letter2;
+				}
+			}
+			n_pred += 1;
+			cout<<"model training completed!"<<endl;
+		}
+	}
+	map<string, int> letter_map;
+	int max_count;
+	string pred_letter;
+	for(int i=0;i<X_test.size();i++){
+		//初始化
+		for(int j=0;j<Letters.size();j++){
+			letter_map[Letters[j]] = 0;
+		}
+		max_count = 0;
+		for(int k=0;k<test_target[0].size();k++){
+			letter_map[test_target[i][k]] += 1;
+			if(letter_map[test_target[i][k]] > max_count){
+				max_count = letter_map[test_target[i][k]];
+				pred_letter = test_target[i][k];
+			}
+		}
+		y_test_pred[i] = pred_letter;
+	}
+	return y_test_pred;
 }
 
 int main()
@@ -149,8 +206,6 @@ int main()
 	vector<vector<double>> X_data(20000,vector<double>(16));
 	vector<string> target(20000);
 	load_data(X_data,target);
-	cout<<X_data[0][0]<<endl;
-	cout<<target[0]<<endl;
 
 	//划分训练集和测试集
 	double train_size = 0.6;
@@ -160,31 +215,12 @@ int main()
 	vector<string> y_test(target.begin()+int(train_size*20000),target.end());
 	cout<<"data processed!"<<endl;
 
-	binary_logistic model(16);
-	vector<vector<double>> p(X_train.size(),vector<double>(1));
-	vector<vector<double>> train_target;
-	vector<vector<double>> y_pred;
+	vector<string> y_pred(y_test.size());
+	y_pred = OvO(X_train,X_test,y_train,y_test,50,0.1);
+	double acc;
+	acc = nc.mean((y_pred == y_test))[0][0];
+	cout<<"OvO accuracy: "<<acc<<endl;
 
-	//OvO test
-	string letter1 = "A";
-	string letter2 = "B";
-	vector<vector<double>> ovo_X_train;
-	vector<string> ovo_y_train;
-	for(int i=0;i<12000;i++){
-		if(y_train[i] == letter1 || y_train[i] == letter2){
-			ovo_X_train.push_back(X_train[i]);
-			ovo_y_train.push_back(y_train[i]);
-		}
-	}
-	train_target = (letter1 == ovo_y_train);
-	double acc = model.accuracy(ovo_X_train,train_target);
-	cout<<"acc0: "<<acc<<endl;
-	y_pred = model.predict(ovo_X_train,"label");
-	int EPOCHS = 100;
-	double lr = 0.1;
-	model.train_model(ovo_X_train,train_target,EPOCHS,lr);
-
-	
 	system("pause");
 	return 0;
 }
