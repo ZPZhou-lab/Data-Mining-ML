@@ -5,5 +5,6 @@
 ## To be improved
 1. The efficiency of some algorithms needs to be optimized such as **matrix multiplication**.
 2. The template class function has not been implemented yet.
-3. More functions in **numpy** have not been implemented yet.
-4. ……
+3. The overloading of some operators needs to be improved.
+4. More functions in **numpy** have not been implemented yet.
+5. ……
