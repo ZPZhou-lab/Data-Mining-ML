@@ -62,6 +62,19 @@ vector<vector<double>> operator==(string a,vector<string> A){
 	return C;
 }
 
+vector<vector<double>> operator==(vector<string> A,vector<string> B){
+	vector<vector<double>> C(A.size(),vector<double>(1));
+	for(int i=0;i<A.size();i++){
+            if(A[i] == B[i]){
+                C[i][0] = 1;
+            }
+            else{
+                C[i][0] = 0;
+            }
+    }
+	return C;
+}
+
 vector<vector<double>> operator==(double a,vector<vector<double>> A){
 	vector<vector<double>> C(A.size(),vector<double>(A[0].size()));
 	for(int i=0;i<A.size();i++){
